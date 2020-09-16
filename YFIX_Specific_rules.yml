@@ -1,0 +1,68 @@
+language node_js
+
+node_js
+  - lts
+
+services
+  - docker
+
+cache false
+
+before_install
+  - sudo add-apt-repository -y ppalibreofficeppa
+  - sudo apt-get update
+  - sudo apt-get -y install libreoffice
+  - sudo apt-get -y install libreoffice-pdfimport
+
+install
+  - bininstallDeps.sh
+  - export GIT_HASH=$(git rev-parse --verify --short HEAD)
+
+script
+  - testsfrontendtravisrunner.sh
+
+env
+  global
+    - secure WMGxFkOeTTlhWB+ChMucRtIqVmMbwzYdNHuHQjKCcj8HBEPdZLfCuKkf4rGnVLcLQiIsyllqzNhBGVHG1nyqWr0LTm8JRqSCDDVIhpyzp9KpCJQQJG2Uwjkn6HIJJhwbxsEdLNV2crYUEiVO3A4Bq0YTHUlbhUqG3mSCr5Ec=
+    - secure gejXUAHYscbR6Bodw35XexpToqWkv2ifeECsbeEmjaLkYzXmUUNWJGknKSu7nEUsSfQV8w+hxApr1Z+jNqk9aX3K1I4btL3cwk2trnNI8XRAvu1c1Iv60eerInkE82Rsd5lwUaMEh+HoL8ztFCZamVndoNgX7HWp5JNRZZMmh4g=
+
+jobs
+  include
+    # we can only frontend tests from the ether organization and not from forks.
+    # To request tests to be run ask a maintainer to fork your repo to ether
+    - if fork = false
+      name Test the Frontend
+      install
+        #FIXME
+        - sed 'sloglevel INFO,loglevel WARN,g' settings.json.template  settings.json
+        - testsfrontendtravissauce_tunnel.sh
+        - bininstallDeps.sh
+        - export GIT_HASH=$(git rev-parse --verify --short HEAD)
+      script
+        - testsfrontendtravisrunner.sh
+    - name Run the Backend tests
+      install
+        - bininstallDeps.sh
+        - cd src && npm install && cd -
+      script
+        - testsfrontendtravisrunnerBackend.sh
+## Temporarily commented out the Dockerfile tests
+#    - name Test the Dockerfile
+#      install
+#        - cd src && npm install && cd -
+#      script
+#        - docker build -t etherpadtest .
+#        - docker run -d -p 90019001 etherpadtest && sleep 3
+#        - cd src && npm run test-container
+    - name Load test Etherpad
+      install
+        - bininstallDeps.sh
+        - cd src && npm install && cd -
+        - npm install -g etherpad-load-test
+      script
+        - testsfrontendtravisrunnerLoadTest.sh
+
+notifications
+  irc
+    channels
+      - irc.freenode.org#etherpad-lite-dev
